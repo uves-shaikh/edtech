@@ -7,15 +7,17 @@ import { courseSchema } from "@/modules/courses/schemas/course";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+
     // Allow public access for viewing course details
     const auth = await authenticate(request).catch(() => null);
     const isAuthenticated = auth && !("response" in auth);
 
     const course = await prisma.course.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         creator: {
           include: {
@@ -94,8 +96,9 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const auth = await authenticate(request);
   if ("response" in auth) return auth.response;
 
@@ -103,7 +106,7 @@ export async function PUT(
   if (guard) return guard;
 
   const existing = await prisma.course.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       creator: true,
     },
@@ -132,7 +135,7 @@ export async function PUT(
     });
 
     const course = await prisma.course.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         title: payload.title,
         description: payload.description,
@@ -197,8 +200,9 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const auth = await authenticate(request);
   if ("response" in auth) return auth.response;
 
@@ -206,7 +210,7 @@ export async function DELETE(
   if (guard) return guard;
 
   const existing = await prisma.course.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       creator: true,
     },
@@ -226,7 +230,7 @@ export async function DELETE(
     }
   }
 
-  await prisma.course.delete({ where: { id: params.id } });
+  await prisma.course.delete({ where: { id } });
 
   return NextResponse.json({ success: true });
 }

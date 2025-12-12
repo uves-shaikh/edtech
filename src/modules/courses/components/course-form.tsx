@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Loader2 } from "lucide-react";
 import type { UseFormReturn } from "react-hook-form";
 
@@ -30,13 +30,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { CourseInput } from "@/modules/courses/schemas/course";
+import { AiCourseAssistant } from "@/modules/courses/components/ai-course-assistant";
 import type { Course } from "@/modules/courses/hooks/use-courses";
 import {
   useCourseForm,
   useCreateCourse,
   useUpdateCourse,
 } from "@/modules/courses/hooks/use-courses";
+import type { CourseInput } from "@/modules/courses/schemas/course";
 
 type Props = {
   mode: "create" | "edit";
@@ -51,43 +52,66 @@ export function CourseForm({
   defaultValues,
   onCompleted,
 }: Props) {
-  const { form } = useCourseForm(defaultValues);
+  // Convert Course to CourseInput format if needed
+  const formDefaults = useMemo<Partial<CourseInput> | undefined>(() => {
+    if (!defaultValues) return undefined;
+    return {
+      title: defaultValues.title || "",
+      description: defaultValues.description || "",
+      category: defaultValues.category || "",
+      level: (defaultValues.level as CourseInput["level"]) || "BEGINNER",
+      price: defaultValues.price || 0,
+      duration: defaultValues.duration || 1,
+      imageUrl: defaultValues.imageUrl || "",
+      isPublished: defaultValues.isPublished ?? false,
+    };
+  }, [defaultValues]);
+
+  const { form } = useCourseForm(formDefaults);
   const typedForm = form as UseFormReturn<CourseInput, any, CourseInput>;
   const createCourse = useCreateCourse();
   const updateCourse = useUpdateCourse(courseId || "");
 
   useEffect(() => {
-    if (defaultValues) {
-      // Convert Course type to CourseInput if needed
-      const formValues: Partial<CourseInput> = {
-        title: defaultValues.title || "",
-        description: defaultValues.description || "",
-        category: defaultValues.category || "",
-        level: (defaultValues.level as CourseInput["level"]) || "BEGINNER",
-        price: defaultValues.price || 0,
-        duration: defaultValues.duration || 1,
-        imageUrl: defaultValues.imageUrl || "",
-        isPublished: defaultValues.isPublished ?? false,
-      };
-      typedForm.reset(formValues);
+    if (formDefaults) {
+      typedForm.reset(formDefaults);
     }
-  }, [defaultValues, typedForm]);
+  }, [formDefaults, typedForm]);
 
   async function onSubmit(values: CourseInput) {
-    const payload: CourseInput = {
-      ...values,
-      price: Number(values.price),
-      duration: Number(values.duration),
-    };
+    try {
+      const payload: CourseInput = {
+        ...values,
+        price: Number(values.price),
+        duration: Number(values.duration),
+      };
 
-    if (mode === "create") {
-      await createCourse.mutateAsync(payload);
-    } else if (courseId) {
-      await updateCourse.mutateAsync(payload);
+      if (mode === "create") {
+        await createCourse.mutateAsync(payload);
+        // Reset to empty form for new course creation
+        typedForm.reset({
+          title: "",
+          description: "",
+          category: "AI & Productivity",
+          level: "BEGINNER",
+          price: 0,
+          duration: 1,
+          imageUrl: "",
+          isPublished: false,
+        });
+      } else if (courseId) {
+        await updateCourse.mutateAsync(payload);
+        // Reset to formDefaults for edit mode
+        if (formDefaults) {
+          typedForm.reset(formDefaults);
+        }
+      }
+
+      onCompleted?.();
+    } catch (error) {
+      // Error is already handled by mutation's onError callback
+      // Don't reset form or call onCompleted on error
     }
-
-    onCompleted?.();
-    typedForm.reset(defaultValues);
   }
 
   const loading = createCourse.isPending || updateCourse.isPending;
@@ -102,8 +126,9 @@ export function CourseForm({
           Create and manage your course content.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         <Form {...typedForm}>
+          <AiCourseAssistant form={typedForm} />
           <form
             onSubmit={typedForm.handleSubmit(onSubmit)}
             className="grid grid-cols-1 gap-4 md:grid-cols-2"
@@ -245,7 +270,12 @@ export function CourseForm({
                     </FormControl>
                   </div>
                   <FormControl>
-                    <input type="hidden" {...field} />
+                    <input
+                      type="hidden"
+                      name={field.name}
+                      value={field.value ? "true" : "false"}
+                      onChange={() => {}}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

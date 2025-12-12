@@ -10,6 +10,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Empty,
   EmptyContent,
   EmptyDescription,
@@ -19,7 +27,7 @@ import {
 } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BookOpen, Pencil, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { CourseFilters } from "@/modules/courses/components/course-filters";
 import type { Course } from "@/modules/courses/hooks/use-courses";
@@ -32,16 +40,53 @@ type Props = {
   onSelect: (course: Course) => void;
 };
 
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
 export function CourseTable({ onSelect }: Props) {
   const [filters, setFilters] = useState({
     search: "",
     level: "",
     category: "",
-    isPublished: "",
   });
-  const { data, isLoading } = useCourses(filters);
+  const [courseToDelete, setCourseToDelete] = useState<string | null>(null);
+
+  // Debounce search input with 500ms delay
+  const debouncedSearch = useDebounce(filters.search, 500);
+
+  // Use debounced search for API calls, but keep immediate values for level and category
+  const apiFilters = useMemo(
+    () => ({
+      search: debouncedSearch,
+      level: filters.level,
+      category: filters.category,
+    }),
+    [debouncedSearch, filters.level, filters.category]
+  );
+
+  const { data, isLoading } = useCourses(apiFilters);
   const courses = useMemo(() => data?.data ?? [], [data]);
   const deleteCourse = useDeleteCourse();
+
+  const confirmDelete = () => {
+    if (!courseToDelete) return;
+    deleteCourse.mutate(courseToDelete, {
+      onSuccess: () => setCourseToDelete(null),
+    });
+  };
 
   return (
     <Card className="h-full">
@@ -79,7 +124,7 @@ export function CourseTable({ onSelect }: Props) {
             {courses.map((course) => (
               <Card
                 key={course.id}
-                className="group relative h-full overflow-hidden border p-0 transition-shadow hover:shadow-md"
+                className="group relative h-full overflow-hidden border pt-0 transition-shadow hover:shadow-md"
               >
                 <div className="relative aspect-video w-full overflow-hidden bg-muted">
                   {course.imageUrl ? (
@@ -128,7 +173,7 @@ export function CourseTable({ onSelect }: Props) {
                         aria-label="Delete course"
                         disabled={deleteCourse.isPending}
                         aria-busy={deleteCourse.isPending}
-                        onClick={() => deleteCourse.mutate(course.id)}
+                        onClick={() => setCourseToDelete(course.id)}
                       >
                         <Trash2 className="size-4 text-destructive" />
                       </Button>
@@ -167,6 +212,40 @@ export function CourseTable({ onSelect }: Props) {
           </div>
         )}
       </CardContent>
+
+      <Dialog
+        open={!!courseToDelete}
+        onOpenChange={(open: boolean) => {
+          if (!open) setCourseToDelete(null);
+        }}
+      >
+        <DialogContent showCloseButton={!deleteCourse.isPending}>
+          <DialogHeader>
+            <DialogTitle>Delete course?</DialogTitle>
+            <DialogDescription>
+              This will permanently remove the course. This action cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setCourseToDelete(null)}
+              disabled={deleteCourse.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={deleteCourse.isPending}
+              aria-busy={deleteCourse.isPending}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

@@ -50,10 +50,11 @@ export function useEnrollCourse() {
         method: "POST",
         body: JSON.stringify({ courseId }),
       }),
-    onSuccess: () => {
+    onSuccess: (_data, courseId) => {
       toast.success("Successfully enrolled in course");
       queryClient.invalidateQueries({ queryKey: ["enrollments"] });
       queryClient.invalidateQueries({ queryKey: ["courses"] });
+      queryClient.invalidateQueries({ queryKey: ["course", courseId] });
     },
     onError: (error) => toast.error(error.message),
   });
@@ -65,10 +66,11 @@ export function useUnenrollCourse() {
   return useMutation({
     mutationFn: (courseId: string) =>
       fetchJSON(`/api/enrollments/${courseId}`, { method: "DELETE" }),
-    onSuccess: () => {
+    onSuccess: (_data, courseId) => {
       toast.success("Successfully unenrolled from course");
       queryClient.invalidateQueries({ queryKey: ["enrollments"] });
       queryClient.invalidateQueries({ queryKey: ["courses"] });
+      queryClient.invalidateQueries({ queryKey: ["course", courseId] });
     },
     onError: (error) => toast.error(error.message),
   });

@@ -14,19 +14,12 @@ type Filters = {
   search: string;
   level: string;
   category: string;
-  isPublished: string;
 };
 
 type Props = {
   filters: Filters;
   onChange: React.Dispatch<React.SetStateAction<Filters>>;
 };
-
-const statusOptions = [
-  { label: "All status", value: "all" },
-  { label: "Published", value: "true" },
-  { label: "Draft", value: "false" },
-];
 
 const levelOptions = [
   { label: "All levels", value: "all" },
@@ -51,26 +44,6 @@ export function CourseFilters({ filters, onChange }: Props) {
           }))
         }
       />
-      <Select
-        value={filters.isPublished || "all"}
-        onValueChange={(value) =>
-          memoizedOnChange((previous) => ({
-            ...previous,
-            isPublished: value === "all" ? "" : value,
-          }))
-        }
-      >
-        <SelectTrigger className="md:w-36">
-          <SelectValue placeholder="Status" />
-        </SelectTrigger>
-        <SelectContent>
-          {statusOptions.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
       <Input
         placeholder="Category"
         className="md:w-36"

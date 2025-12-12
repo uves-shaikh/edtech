@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { BookOpen, Sparkles, Users } from "lucide-react";
 
@@ -8,8 +10,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useCurrentUser } from "@/modules/auth/hooks/use-auth";
 
 export default function Home() {
+  const { data, isLoading } = useCurrentUser();
+  const user = data?.user;
+
   return (
     <div className="min-h-screen space-y-16">
       <section className="container mx-auto px-4 py-16 text-center">
@@ -23,15 +29,28 @@ export default function Home() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link href="/courses">
             <Button size="lg" className="w-full sm:w-auto">
-              Browse Courses
+              {user ? "Continue learning" : "Browse Courses"}
             </Button>
           </Link>
-          <Link href="/sign-up">
-            <Button variant="outline" size="lg" className="w-full sm:w-auto">
-              Get Started
-            </Button>
-          </Link>
+          {user ? (
+            <Link href="/dashboard">
+              <Button variant="outline" size="lg" className="w-full sm:w-auto">
+                Go to dashboard
+              </Button>
+            </Link>
+          ) : (
+            <Link href="/sign-up">
+              <Button variant="outline" size="lg" className="w-full sm:w-auto">
+                Get Started
+              </Button>
+            </Link>
+          )}
         </div>
+        {!isLoading && user && (
+          <p className="mt-4 text-sm text-muted-foreground">
+            Welcome back, {user.name}
+          </p>
+        )}
       </section>
 
       <section className="container mx-auto px-4 pb-8">

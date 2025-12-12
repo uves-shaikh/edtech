@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -55,21 +56,16 @@ export function useAuthForms() {
 }
 
 export function useCurrentUser() {
-  const shouldFetch =
-    typeof document !== "undefined" &&
-    Boolean(document.cookie) &&
-    /auth|session/i.test(document.cookie);
-
   return useQuery<UserResponse>({
     queryKey: ["current-user"],
     queryFn: () => jsonFetcher<UserResponse>("/api/auth/me"),
     retry: false,
-    enabled: shouldFetch,
   });
 }
 
 export function useSignin() {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   return useMutation({
     mutationFn: (payload: SigninPayload) =>
@@ -80,6 +76,7 @@ export function useSignin() {
     onSuccess: (data) => {
       toast.success(`Welcome back, ${data.user.name}`);
       queryClient.invalidateQueries({ queryKey: ["current-user"] });
+      router.push("/dashboard");
     },
     onError: (error) => toast.error(error.message),
   });
@@ -87,6 +84,7 @@ export function useSignin() {
 
 export function useSignup() {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   return useMutation({
     mutationFn: (payload: SignupPayload) =>
@@ -97,6 +95,7 @@ export function useSignup() {
     onSuccess: (data) => {
       toast.success(`Account created for ${data.user.name}`);
       queryClient.invalidateQueries({ queryKey: ["current-user"] });
+      router.push("/dashboard");
     },
     onError: (error) => toast.error(error.message),
   });
@@ -110,7 +109,8 @@ export function useSignout() {
       await fetch("/api/auth/sign-out", { method: "POST" });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["current-user"] });
+      queryClient.setQueryData(["current-user"], undefined);
+      queryClient.resetQueries({ queryKey: ["current-user"] });
       toast.success("Signed out");
     },
   });

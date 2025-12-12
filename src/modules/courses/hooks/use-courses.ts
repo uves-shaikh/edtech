@@ -37,7 +37,6 @@ type CourseFilters = {
   search?: string;
   level?: string;
   category?: string;
-  isPublished?: string;
 };
 
 async function fetchJSON<T>(url: string, init?: RequestInit) {
@@ -78,13 +77,12 @@ export function useCourseForm(initial?: Partial<CourseInput>) {
 
 export function useCourses(
   filters: CourseFilters,
-  options?: { enabled?: boolean },
+  options?: { enabled?: boolean }
 ) {
   const params = new URLSearchParams();
   if (filters.search) params.set("search", filters.search);
   if (filters.level) params.set("level", filters.level);
   if (filters.category) params.set("category", filters.category);
-  if (filters.isPublished) params.set("isPublished", filters.isPublished);
 
   return useQuery<{ data: Course[] }>({
     queryKey: ["courses", filters],
@@ -139,16 +137,5 @@ export function useDeleteCourse() {
       toast.success("Course deleted");
       queryClient.invalidateQueries({ queryKey: ["courses"] });
     },
-  });
-}
-
-export function useAiSummary() {
-  return useMutation({
-    mutationFn: (description: string) =>
-      fetchJSON<{ summary: string }>("/api/ai/summary", {
-        method: "POST",
-        body: JSON.stringify({ description }),
-      }),
-    onError: (error) => toast.error(error.message),
   });
 }

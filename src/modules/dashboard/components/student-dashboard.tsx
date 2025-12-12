@@ -1,8 +1,10 @@
 "use client";
 
-import { BookOpen, LogOut } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import Link from "next/link";
 
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,36 +14,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useEnrollments } from "@/modules/enrollments/hooks/use-enrollments";
-import { useCurrentUser, useSignout } from "@/modules/auth/hooks/use-auth";
 
 export function StudentDashboard() {
-  const { data: authData } = useCurrentUser();
-  const signout = useSignout();
   const { data: enrollmentsData, isLoading } = useEnrollments();
   const enrollments = enrollmentsData?.data ?? [];
 
   return (
     <div className="space-y-8">
-      <Card className="border-dashed bg-gradient-to-r from-slate-50 via-white to-blue-50 dark:from-zinc-900 dark:to-blue-900/10">
-        <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1">
-            <CardTitle className="text-2xl">Student Dashboard</CardTitle>
-            <CardDescription className="text-base">
-              Welcome back, {authData?.user.name}. Continue your learning journey.
-            </CardDescription>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => signout.mutate()}>
-              <LogOut className="mr-2 size-4" />
-              Sign out
-            </Button>
-          </div>
-        </CardHeader>
-      </Card>
-
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader>
@@ -81,11 +61,16 @@ export function StudentDashboard() {
       ) : (
         <div className="space-y-4">
           {enrollments.map((enrollment) => (
-            <Card key={enrollment.id} className="hover:shadow-md transition-shadow">
+            <Card
+              key={enrollment.id}
+              className="hover:shadow-md transition-shadow"
+            >
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <CardTitle className="mb-2">{enrollment.course.title}</CardTitle>
+                    <CardTitle className="mb-2">
+                      {enrollment.course.title}
+                    </CardTitle>
                     <CardDescription className="line-clamp-2">
                       {enrollment.course.description}
                     </CardDescription>
@@ -108,14 +93,18 @@ export function StudentDashboard() {
               <CardContent>
                 <div className="flex flex-wrap items-center gap-2 mb-4">
                   <Badge variant="outline">{enrollment.course.level}</Badge>
-                  <Badge variant="secondary">{enrollment.course.category}</Badge>
+                  <Badge variant="secondary">
+                    {enrollment.course.category}
+                  </Badge>
                   <span className="text-sm text-muted-foreground">
-                    {enrollment.course.duration}h • ₹{enrollment.course.price.toFixed(2)}
+                    {enrollment.course.duration}h • ₹
+                    {enrollment.course.price.toFixed(2)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">
-                    Enrolled {new Date(enrollment.enrolledAt).toLocaleDateString()}
+                    Enrolled{" "}
+                    {new Date(enrollment.enrolledAt).toLocaleDateString()}
                   </span>
                   <Button asChild variant="outline" size="sm">
                     <Link href={`/courses/${enrollment.course.id}`}>
@@ -131,4 +120,3 @@ export function StudentDashboard() {
     </div>
   );
 }
-

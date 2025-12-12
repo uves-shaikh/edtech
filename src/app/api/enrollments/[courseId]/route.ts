@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { courseId: string } },
+  { params }: { params: Promise<{ courseId: string }> },
 ) {
   const auth = await authenticate(request);
   if ("response" in auth) return auth.response;
@@ -14,11 +14,13 @@ export async function DELETE(
   if (guard) return guard;
 
   try {
+    const { courseId } = await params;
+
     const enrollment = await prisma.enrollment.findUnique({
       where: {
         userId_courseId: {
           userId: auth.user.id,
-          courseId: params.courseId,
+          courseId,
         },
       },
     });
@@ -34,7 +36,7 @@ export async function DELETE(
       where: {
         userId_courseId: {
           userId: auth.user.id,
-          courseId: params.courseId,
+          courseId,
         },
       },
     });

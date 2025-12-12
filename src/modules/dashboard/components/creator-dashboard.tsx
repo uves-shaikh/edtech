@@ -1,36 +1,23 @@
 "use client";
 
-import { LogOut, Plus } from "lucide-react";
-import { useState, useMemo } from "react";
+import { Plus } from "lucide-react";
+import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CourseForm } from "@/modules/courses/components/course-form";
 import { CourseTable } from "@/modules/courses/components/course-table";
 import type { Course } from "@/modules/courses/hooks/use-courses";
 import { useCourses } from "@/modules/courses/hooks/use-courses";
 import { StatsCards } from "@/modules/dashboard/components/stats-cards";
-import {
-  useCurrentUser,
-  useSignout,
-} from "@/modules/auth/hooks/use-auth";
 
 export function CreatorDashboard() {
-  const { data: authData } = useCurrentUser();
-  const signout = useSignout();
   const [draftCourse, setDraftCourse] = useState<Course | null>(null);
   const [showForm, setShowForm] = useState(false);
 
   const { data: courseData, isLoading: loadingCourses } = useCourses(
-    { search: "", level: "", category: "", isPublished: "" },
-    { enabled: true },
+    { search: "", level: "", category: "" },
+    { enabled: true }
   );
 
   const stats = useMemo(() => {
@@ -41,11 +28,11 @@ export function CreatorDashboard() {
         ? 0
         : courses.reduce(
             (sum, course) => sum + (Number(course.price) || 0),
-            0,
+            0
           ) / courses.length;
     const totalEnrollments = courses.reduce(
       (sum, course) => sum + (course.enrollmentCount || 0),
-      0,
+      0
     );
 
     return {
@@ -58,33 +45,6 @@ export function CreatorDashboard() {
 
   return (
     <div className="space-y-8">
-      <Card className="border-dashed bg-gradient-to-r from-slate-50 via-white to-emerald-50 dark:from-zinc-900 dark:to-emerald-900/10">
-        <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1">
-            <CardTitle className="text-2xl">Creator Workspace</CardTitle>
-            <CardDescription className="text-base">
-              Welcome back, {authData?.user.name}. Create and manage your
-              courses.
-            </CardDescription>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => signout.mutate()}>
-              <LogOut className="mr-2 size-4" />
-              Sign out
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-            <span>Role: {authData?.user.role}</span>
-            <Separator orientation="vertical" className="h-6 hidden sm:block" />
-            <span className="hidden sm:block">
-              Email: {authData?.user.email}
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-
       <StatsCards
         total={stats.total}
         published={stats.published}
@@ -144,4 +104,3 @@ export function CreatorDashboard() {
     </div>
   );
 }
-
