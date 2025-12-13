@@ -1,11 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
+import { useAuth } from "@/components/providers/auth-context";
 import type { SigninPayload, SignupPayload } from "@/modules/auth/schemas/auth";
 import { signinSchema, signupSchema } from "@/modules/auth/schemas/auth";
 
@@ -25,6 +26,7 @@ async function jsonFetcher<T>(input: RequestInfo, init?: RequestInit) {
       "Content-Type": "application/json",
       ...init?.headers,
     },
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -56,15 +58,20 @@ export function useAuthForms() {
 }
 
 export function useCurrentUser() {
-  return useQuery<UserResponse>({
-    queryKey: ["current-user"],
-    queryFn: () => jsonFetcher<UserResponse>("/api/auth/me"),
-    retry: false,
-  });
+  const { user, isLoading, isError, error, refetch } = useAuth();
+
+  return {
+    data: user ? { user } : undefined,
+    user,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  };
 }
 
 export function useSignin() {
-  const queryClient = useQueryClient();
+  const { setUser } = useAuth();
   const router = useRouter();
 
   return useMutation({
@@ -73,9 +80,14 @@ export function useSignin() {
         method: "POST",
         body: JSON.stringify(payload),
       }),
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      setUser({
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.name,
+        role: data.user.role as "STUDENT" | "CREATOR" | "ADMIN",
+      });
       toast.success(`Welcome back, ${data.user.name}`);
-      queryClient.invalidateQueries({ queryKey: ["current-user"] });
       router.push("/dashboard");
     },
     onError: (error) => toast.error(error.message),
@@ -83,7 +95,7 @@ export function useSignin() {
 }
 
 export function useSignup() {
-  const queryClient = useQueryClient();
+  const { setUser } = useAuth();
   const router = useRouter();
 
   return useMutation({
@@ -93,8 +105,13 @@ export function useSignup() {
         body: JSON.stringify(payload),
       }),
     onSuccess: (data) => {
+      setUser({
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.name,
+        role: data.user.role as "STUDENT" | "CREATOR" | "ADMIN",
+      });
       toast.success(`Account created for ${data.user.name}`);
-      queryClient.invalidateQueries({ queryKey: ["current-user"] });
       router.push("/dashboard");
     },
     onError: (error) => toast.error(error.message),
@@ -102,15 +119,17 @@ export function useSignup() {
 }
 
 export function useSignout() {
-  const queryClient = useQueryClient();
+  const { setUser } = useAuth();
 
   return useMutation({
     mutationFn: async () => {
-      await fetch("/api/auth/sign-out", { method: "POST" });
+      await fetch("/api/auth/sign-out", {
+        method: "POST",
+        credentials: "include",
+      });
     },
     onSuccess: () => {
-      queryClient.setQueryData(["current-user"], undefined);
-      queryClient.resetQueries({ queryKey: ["current-user"] });
+      setUser(null);
       toast.success("Signed out");
     },
   });

@@ -29,6 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BookOpen, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { useDebounce } from "@/hooks/use-debounce";
 import { CourseFilters } from "@/modules/courses/components/course-filters";
 import type { Course } from "@/modules/courses/hooks/use-courses";
 import {
@@ -39,22 +40,6 @@ import {
 type Props = {
   onSelect: (course: Course) => void;
 };
-
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-}
 
 export function CourseTable({ onSelect }: Props) {
   const [filters, setFilters] = useState({
@@ -93,8 +78,8 @@ export function CourseTable({ onSelect }: Props) {
       <CardHeader>
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <CardTitle>Courses</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-lg sm:text-xl">Courses</CardTitle>
+            <CardDescription className="text-sm">
               Manage your courses and track their status.
             </CardDescription>
           </div>
@@ -185,7 +170,7 @@ export function CourseTable({ onSelect }: Props) {
                 </CardHeader>
 
                 <CardContent>
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-sm">
                     <div className="space-y-1">
                       <p className="font-semibold">
                         ₹{course.price.toFixed(2)}
@@ -195,7 +180,7 @@ export function CourseTable({ onSelect }: Props) {
                         enrolled
                       </p>
                     </div>
-                    <div className="flex flex-col items-end gap-1 text-xs text-muted-foreground">
+                    <div className="flex flex-col items-start sm:items-end gap-1 text-xs text-muted-foreground">
                       <span>
                         Created{" "}
                         {new Date(course.createdAt).toLocaleDateString()}

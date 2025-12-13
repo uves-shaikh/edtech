@@ -77,7 +77,7 @@ export function CourseDetailPage({ params }: CourseDetailPageProps) {
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
+    <div className="container mx-auto px-4 py-6 sm:py-8 space-y-6">
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
           <Card className="pt-0">
@@ -104,7 +104,9 @@ export function CourseDetailPage({ params }: CourseDetailPageProps) {
                   <Badge variant="secondary">Draft</Badge>
                 )}
               </div>
-              <CardTitle className="text-3xl">{course.title}</CardTitle>
+              <CardTitle className="text-2xl sm:text-3xl">
+                {course.title}
+              </CardTitle>
               {course.creator && (
                 <div className="flex items-center gap-2 mt-4">
                   <Avatar>
@@ -135,7 +137,7 @@ export function CourseDetailPage({ params }: CourseDetailPageProps) {
             <CardContent>
               <Separator className="my-4" />
               <div className="prose dark:prose-invert max-w-none">
-                <p className="text-lg">{course.description}</p>
+                <p className="text-base sm:text-lg">{course.description}</p>
               </div>
             </CardContent>
           </Card>

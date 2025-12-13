@@ -86,11 +86,11 @@ export function AuthCard({ variant, onSubmit, loading }: AuthCardProps) {
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-xl">
+        <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
           <ShieldCheck className="size-5" />
           {title}
         </CardTitle>
-        <CardDescription>{description}</CardDescription>
+        <CardDescription className="text-sm">{description}</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>

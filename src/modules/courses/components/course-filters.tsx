@@ -32,10 +32,10 @@ export function CourseFilters({ filters, onChange }: Props) {
   const memoizedOnChange = useMemo(() => onChange, [onChange]);
 
   return (
-    <div className="flex flex-col gap-2 md:flex-row md:items-center">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center w-full md:w-auto">
       <Input
         placeholder="Search"
-        className="md:w-48"
+        className="w-full sm:w-48"
         value={filters.search}
         onChange={(event) =>
           memoizedOnChange((previous) => ({
@@ -46,7 +46,7 @@ export function CourseFilters({ filters, onChange }: Props) {
       />
       <Input
         placeholder="Category"
-        className="md:w-36"
+        className="w-full sm:w-36"
         value={filters.category}
         onChange={(event) =>
           memoizedOnChange((previous) => ({
@@ -64,7 +64,7 @@ export function CourseFilters({ filters, onChange }: Props) {
           }))
         }
       >
-        <SelectTrigger className="md:w-36">
+        <SelectTrigger className="w-full sm:w-36">
           <SelectValue placeholder="Level" />
         </SelectTrigger>
         <SelectContent>

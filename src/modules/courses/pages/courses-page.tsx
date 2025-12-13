@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { BookOpen } from "lucide-react";
 import Link from "next/link";
 
@@ -14,6 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useDebounce } from "@/hooks/use-debounce";
 import { CourseFilters } from "@/modules/courses/components/course-filters";
 import { useCourses } from "@/modules/courses/hooks/use-courses";
 import { useEnrollCourse } from "@/modules/enrollments/hooks/use-enrollments";
@@ -26,17 +27,31 @@ export function CoursesPage() {
     level: "",
     category: "",
   });
-  const { data, isLoading } = useCourses(filters);
+
+  // Debounce search input with 500ms delay
+  const debouncedSearch = useDebounce(filters.search, 500);
+
+  // Use debounced search for API calls, but keep immediate values for level and category
+  const apiFilters = useMemo(
+    () => ({
+      search: debouncedSearch,
+      level: filters.level,
+      category: filters.category,
+    }),
+    [debouncedSearch, filters.level, filters.category]
+  );
+
+  const { data, isLoading } = useCourses(apiFilters);
   const courses = data?.data ?? [];
   const enrollCourse = useEnrollCourse();
   const isStudent = authData?.user.role === "STUDENT";
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
+    <div className="container mx-auto px-4 py-6 sm:py-8 space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Browse Courses</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold">Browse Courses</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Discover courses from expert creators
           </p>
         </div>
@@ -104,7 +119,7 @@ export function CoursesPage() {
                 )}
               </CardHeader>
               <CardContent>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold">
                       ₹{course.price.toFixed(2)}
@@ -114,8 +129,13 @@ export function CoursesPage() {
                       enrolled
                     </p>
                   </div>
-                  <div className="flex gap-2">
-                    <Button asChild size="sm" variant="outline">
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <Button
+                      asChild
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 sm:flex-initial"
+                    >
                       <Link href={`/courses/${course.id}`}>View</Link>
                     </Button>
                     {isStudent && !course.isEnrolled && (
@@ -123,6 +143,7 @@ export function CoursesPage() {
                         size="sm"
                         onClick={() => enrollCourse.mutate(course.id)}
                         disabled={enrollCourse.isPending}
+                        className="flex-1 sm:flex-initial"
                       >
                         Enroll
                       </Button>

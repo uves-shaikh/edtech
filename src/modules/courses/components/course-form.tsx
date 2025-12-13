@@ -119,10 +119,10 @@ export function CourseForm({
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle>
+        <CardTitle className="text-lg sm:text-xl">
           {mode === "create" ? "New Course" : "Update Course"}
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-sm">
           Create and manage your course content.
         </CardDescription>
       </CardHeader>
@@ -283,7 +283,11 @@ export function CourseForm({
             />
 
             <div className="md:col-span-2 flex items-center justify-end gap-2">
-              <Button type="submit" disabled={loading}>
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full sm:w-auto"
+              >
                 {loading && (
                   <Loader2 className="size-4 animate-spin" aria-hidden />
                 )}

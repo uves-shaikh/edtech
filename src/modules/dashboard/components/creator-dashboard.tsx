@@ -86,9 +86,12 @@ export function CreatorDashboard() {
         </Card>
       ) : (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">My Courses</h2>
-            <Button onClick={() => setShowForm(true)}>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <h2 className="text-lg sm:text-xl font-semibold">My Courses</h2>
+            <Button
+              onClick={() => setShowForm(true)}
+              className="w-full sm:w-auto"
+            >
               <Plus className="mr-2 size-4" />
               New Course
             </Button>

@@ -18,11 +18,11 @@ export default function Home() {
 
   return (
     <div className="min-h-screen space-y-16">
-      <section className="container mx-auto px-4 py-16 text-center">
-        <h1 className="text-4xl sm:text-5xl font-bold mb-6">
+      <section className="container mx-auto px-4 py-12 sm:py-16 text-center">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6">
           Learn Anything, Anytime, Anywhere
         </h1>
-        <p className="text-lg sm:text-xl text-foreground/70 mb-8 max-w-2xl mx-auto">
+        <p className="text-base sm:text-lg md:text-xl text-foreground/70 mb-6 sm:mb-8 max-w-2xl mx-auto px-4">
           Discover thousands of courses from expert instructors. Start your
           learning journey today.
         </p>
@@ -54,8 +54,10 @@ export default function Home() {
       </section>
 
       <section className="container mx-auto px-4 pb-8">
-        <h2 className="text-3xl font-bold text-center mb-12">Why Choose Us?</h2>
-        <div className="grid gap-6 md:grid-cols-3">
+        <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">
+          Why Choose Us?
+        </h2>
+        <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
           <Card>
             <CardHeader>
               <BookOpen className="h-10 w-10 mb-4" />
@@ -89,22 +91,30 @@ export default function Home() {
 
       <section className="bg-muted/60 py-16">
         <div className="container mx-auto px-4">
-          <div className="grid gap-8 text-center md:grid-cols-4">
+          <div className="grid gap-8 text-center grid-cols-2 md:grid-cols-4">
             <div>
-              <div className="text-4xl font-bold mb-2">1,000+</div>
-              <div className="text-foreground/60">Courses</div>
+              <div className="text-3xl sm:text-4xl font-bold mb-2">1,000+</div>
+              <div className="text-sm sm:text-base text-foreground/60">
+                Courses
+              </div>
             </div>
             <div>
-              <div className="text-4xl font-bold mb-2">500+</div>
-              <div className="text-foreground/60">Instructors</div>
+              <div className="text-3xl sm:text-4xl font-bold mb-2">500+</div>
+              <div className="text-sm sm:text-base text-foreground/60">
+                Instructors
+              </div>
             </div>
             <div>
-              <div className="text-4xl font-bold mb-2">10K+</div>
-              <div className="text-foreground/60">Students</div>
+              <div className="text-3xl sm:text-4xl font-bold mb-2">10K+</div>
+              <div className="text-sm sm:text-base text-foreground/60">
+                Students
+              </div>
             </div>
             <div>
-              <div className="text-4xl font-bold mb-2">50K+</div>
-              <div className="text-foreground/60">Enrollments</div>
+              <div className="text-3xl sm:text-4xl font-bold mb-2">50K+</div>
+              <div className="text-sm sm:text-base text-foreground/60">
+                Enrollments
+              </div>
             </div>
           </div>
         </div>

@@ -66,18 +66,21 @@ export function StudentDashboard() {
               className="hover:shadow-md transition-shadow"
             >
               <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="mb-2">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="mb-2 text-base sm:text-lg">
                       {enrollment.course.title}
                     </CardTitle>
-                    <CardDescription className="line-clamp-2">
+                    <CardDescription className="line-clamp-2 text-sm">
                       {enrollment.course.description}
                     </CardDescription>
                   </div>
                   {enrollment.course.creator && (
-                    <Link href={`/creators/${enrollment.course.creator.id}`}>
-                      <Avatar className="ml-4">
+                    <Link
+                      href={`/creators/${enrollment.course.creator.id}`}
+                      className="flex-shrink-0"
+                    >
+                      <Avatar className="ml-2 sm:ml-4">
                         <AvatarFallback>
                           {enrollment.course.creator.user.name
                             .split(" ")
@@ -101,12 +104,17 @@ export function StudentDashboard() {
                     {enrollment.course.price.toFixed(2)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <span className="text-sm text-muted-foreground">
                     Enrolled{" "}
                     {new Date(enrollment.enrolledAt).toLocaleDateString()}
                   </span>
-                  <Button asChild variant="outline" size="sm">
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="w-full sm:w-auto"
+                  >
                     <Link href={`/courses/${enrollment.course.id}`}>
                       View Course
                     </Link>

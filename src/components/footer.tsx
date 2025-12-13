@@ -4,13 +4,13 @@ import { GithubIcon, LinkedinIcon } from "lucide-react";
 export function Footer() {
   return (
     <footer className="border-t border-foreground/20 bg-background/50 backdrop-blur-sm">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="text-sm text-foreground/60">
+      <div className="container mx-auto px-4 py-6 sm:py-8">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-left">
+          <div className="text-xs sm:text-sm text-foreground/60">
             <p>© 2025 EdTech Platform. Built with Next.js 16</p>
           </div>
-          <div className="flex items-center gap-6">
-            <div className="text-sm text-foreground/80">
+          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+            <div className="text-xs sm:text-sm text-foreground/80">
               <p className="font-semibold">Developer:</p>
               <p className="text-foreground/60">Uves Shaikh</p>
             </div>

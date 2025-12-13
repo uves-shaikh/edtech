@@ -71,10 +71,10 @@ export function CreatorProfilePage({ params }: CreatorProfilePageProps) {
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
+    <div className="container mx-auto px-4 py-6 sm:py-8 space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex items-start gap-4">
+          <div className="flex flex-col sm:flex-row items-start gap-4">
             <Avatar className="size-16">
               <AvatarFallback className="text-lg">
                 {creator.user.name
@@ -85,13 +85,19 @@ export function CreatorProfilePage({ params }: CreatorProfilePageProps) {
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <CardTitle className="text-2xl">{creator.user.name}</CardTitle>
-              <CardDescription>{creator.user.email}</CardDescription>
+              <CardTitle className="text-xl sm:text-2xl">
+                {creator.user.name}
+              </CardTitle>
+              <CardDescription className="text-sm">
+                {creator.user.email}
+              </CardDescription>
               {creator.expertise && (
                 <p className="mt-2 text-sm">{creator.expertise}</p>
               )}
               {creator.bio && (
-                <p className="mt-2 text-muted-foreground">{creator.bio}</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {creator.bio}
+                </p>
               )}
             </div>
           </div>
@@ -99,7 +105,7 @@ export function CreatorProfilePage({ params }: CreatorProfilePageProps) {
       </Card>
 
       <div>
-        <h2 className="text-2xl font-semibold mb-4">Courses</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold mb-4">Courses</h2>
         {creator.courses && creator.courses.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {creator.courses.map((course: any) => (
@@ -131,7 +137,7 @@ export function CreatorProfilePage({ params }: CreatorProfilePageProps) {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div>
                       <p className="text-sm font-semibold">
                         ₹{course.price.toFixed(2)}
@@ -141,7 +147,12 @@ export function CreatorProfilePage({ params }: CreatorProfilePageProps) {
                         enrolled
                       </p>
                     </div>
-                    <Button asChild size="sm" variant="outline">
+                    <Button
+                      asChild
+                      size="sm"
+                      variant="outline"
+                      className="w-full sm:w-auto"
+                    >
                       <Link href={`/courses/${course.id}`}>View</Link>
                     </Button>
                   </div>
