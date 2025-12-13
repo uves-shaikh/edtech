@@ -36,6 +36,7 @@ export type Course = {
 type CourseFilters = {
   search?: string;
   level?: string;
+  allPublished?: boolean;
 };
 
 async function fetchJSON<T>(url: string, init?: RequestInit) {
@@ -81,6 +82,7 @@ export function useCourses(
   const params = new URLSearchParams();
   if (filters.search) params.set("search", filters.search);
   if (filters.level) params.set("level", filters.level);
+  if (filters.allPublished) params.set("allPublished", "true");
 
   return useQuery<{ data: Course[] }>({
     queryKey: ["courses", filters],

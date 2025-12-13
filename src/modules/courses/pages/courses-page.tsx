@@ -35,6 +35,7 @@ export function CoursesPage() {
     () => ({
       search: debouncedSearch,
       level: filters.level,
+      allPublished: true,
     }),
     [debouncedSearch, filters.level]
   );
@@ -43,6 +44,7 @@ export function CoursesPage() {
   const courses = data?.data ?? [];
   const enrollCourse = useEnrollCourse();
   const isStudent = authData?.user.role === "STUDENT";
+  const currentUserId = authData?.user.id;
 
   return (
     <div className="container mx-auto px-4 py-6 sm:py-8 space-y-6">
@@ -102,6 +104,11 @@ export function CoursesPage() {
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   <Badge variant="outline">{course.level}</Badge>
                   <Badge variant="secondary">{course.category}</Badge>
+                  {course.creator?.user.id === currentUserId && (
+                    <Badge variant="default" className="bg-primary">
+                      My Course
+                    </Badge>
+                  )}
                 </div>
                 <CardTitle className="line-clamp-2">{course.title}</CardTitle>
                 <CardDescription className="line-clamp-2">

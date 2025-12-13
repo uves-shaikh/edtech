@@ -11,6 +11,7 @@ const querySchema = z.object({
   level: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED"]).optional(),
   isPublished: z.string().optional(),
   creatorId: z.string().optional(),
+  allPublished: z.string().optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -25,13 +26,14 @@ export async function GET(request: NextRequest) {
       level: searchParams.get("level") || undefined,
       isPublished: searchParams.get("isPublished") || undefined,
       creatorId: searchParams.get("creatorId") || undefined,
+      allPublished: searchParams.get("allPublished") || undefined,
     });
 
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid filters" }, { status: 400 });
     }
 
-    const { search, level, isPublished, creatorId } = parsed.data;
+    const { search, level, isPublished, creatorId, allPublished } = parsed.data;
     const where: Prisma.CourseWhereInput = {};
 
     if (search) {
@@ -48,30 +50,35 @@ export async function GET(request: NextRequest) {
       where.isPublished = isPublished === "true";
     }
 
-    // Role-based filtering
-    if (isAuthenticated) {
-      if (auth.user.role === "STUDENT") {
-        // Students only see published courses
-        where.isPublished = true;
-      } else if (auth.user.role === "CREATOR") {
-        // Creators see their own courses
-        const creatorWhere: Prisma.CreatorWhereUniqueInput = {
-          userId: auth.user.id,
-        };
-
-        const creator = await prisma.creator.findUnique({
-          where: creatorWhere,
-        });
-        if (creator) {
-          where.creatorId = creator.id;
-        } else {
-          // Creator profile doesn't exist yet, return empty
-          return NextResponse.json({ data: [] });
-        }
-      }
-    } else {
-      // Public access: only show published courses
+    // If allPublished=true, show all published courses regardless of role
+    if (allPublished === "true") {
       where.isPublished = true;
+    } else {
+      // Role-based filtering
+      if (isAuthenticated) {
+        if (auth.user.role === "STUDENT") {
+          // Students only see published courses
+          where.isPublished = true;
+        } else if (auth.user.role === "CREATOR") {
+          // Creators see their own courses (both published and unpublished)
+          const creatorWhere: Prisma.CreatorWhereUniqueInput = {
+            userId: auth.user.id,
+          };
+
+          const creator = await prisma.creator.findUnique({
+            where: creatorWhere,
+          });
+          if (creator) {
+            where.creatorId = creator.id;
+          } else {
+            // Creator profile doesn't exist yet, return empty
+            return NextResponse.json({ data: [] });
+          }
+        }
+      } else {
+        // Public access: only show published courses
+        where.isPublished = true;
+      }
     }
 
     if (creatorId) {
