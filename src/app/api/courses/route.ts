@@ -8,7 +8,6 @@ import { courseSchema } from "@/modules/courses/schemas/course";
 
 const querySchema = z.object({
   search: z.string().optional(),
-  category: z.string().optional(),
   level: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED"]).optional(),
   isPublished: z.string().optional(),
   creatorId: z.string().optional(),
@@ -23,7 +22,6 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const parsed = querySchema.safeParse({
       search: searchParams.get("search") || undefined,
-      category: searchParams.get("category") || undefined,
       level: searchParams.get("level") || undefined,
       isPublished: searchParams.get("isPublished") || undefined,
       creatorId: searchParams.get("creatorId") || undefined,
@@ -33,18 +31,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Invalid filters" }, { status: 400 });
     }
 
-    const { search, category, level, isPublished, creatorId } = parsed.data;
+    const { search, level, isPublished, creatorId } = parsed.data;
     const where: Prisma.CourseWhereInput = {};
 
     if (search) {
       where.OR = [
         { title: { contains: search, mode: "insensitive" } },
         { description: { contains: search, mode: "insensitive" } },
-        { category: { contains: search, mode: "insensitive" } },
       ];
     }
 
-    if (category) where.category = category;
     if (level) where.level = level;
 
     // Convert string query param to boolean for isPublished filter
@@ -82,7 +78,7 @@ export async function GET(request: NextRequest) {
       where.creatorId = creatorId;
     }
 
-    const include: Prisma.CourseInclude = {
+    const include = {
       creator: {
         include: {
           user: {
@@ -126,12 +122,12 @@ export async function GET(request: NextRequest) {
         isPublished: course.isPublished,
         createdAt: course.createdAt.toISOString(),
         updatedAt: course.updatedAt.toISOString(),
-        creator: course.creator
+        creator: course.creator.user
           ? {
               id: course.creator.id,
               bio: course.creator.bio,
               expertise: course.creator.expertise,
-              user: course.creator,
+              user: course.creator.user,
             }
           : null,
         enrollmentCount: course._count.enrollments,
@@ -202,7 +198,7 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    const courseInclude: Prisma.CourseInclude = {
+    const courseInclude = {
       creator: {
         include: {
           user: {

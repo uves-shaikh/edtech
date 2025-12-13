@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BookOpen, Pencil, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useDebounce } from "@/hooks/use-debounce";
 import { CourseFilters } from "@/modules/courses/components/course-filters";
@@ -45,21 +45,19 @@ export function CourseTable({ onSelect }: Props) {
   const [filters, setFilters] = useState({
     search: "",
     level: "",
-    category: "",
   });
   const [courseToDelete, setCourseToDelete] = useState<string | null>(null);
 
   // Debounce search to reduce API calls while user types (500ms threshold)
   const debouncedSearch = useDebounce(filters.search, 500);
 
-  // Separate debounced search from immediate filters: search debounced, level/category applied instantly
+  // Separate debounced search from immediate filters: search debounced, level applied instantly
   const apiFilters = useMemo(
     () => ({
       search: debouncedSearch,
       level: filters.level,
-      category: filters.category,
     }),
-    [debouncedSearch, filters.level, filters.category]
+    [debouncedSearch, filters.level]
   );
 
   const { data, isLoading } = useCourses(apiFilters);

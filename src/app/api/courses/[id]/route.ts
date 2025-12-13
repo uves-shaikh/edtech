@@ -19,7 +19,7 @@ export async function GET(
 
     const where: Prisma.CourseWhereUniqueInput = { id };
 
-    const include: Prisma.CourseInclude = {
+    const include = {
       creator: {
         include: {
           user: {
@@ -74,12 +74,12 @@ export async function GET(
         isPublished: course.isPublished,
         createdAt: course.createdAt.toISOString(),
         updatedAt: course.updatedAt.toISOString(),
-        creator: course.creator
+        creator: course.creator.user
           ? {
               id: course.creator.id,
               bio: course.creator.bio,
               expertise: course.creator.expertise,
-              user: course.creator,
+              user: course.creator.user,
             }
           : null,
         enrollmentCount: course._count.enrollments,
@@ -156,7 +156,7 @@ export async function PUT(
       imageUrl: payload.imageUrl,
       isPublished: payload.isPublished,
     };
-    const updateInclude: Prisma.CourseInclude = {
+    const updateInclude = {
       creator: {
         include: {
           user: {

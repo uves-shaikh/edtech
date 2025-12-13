@@ -25,20 +25,18 @@ export function CoursesPage() {
   const [filters, setFilters] = useState({
     search: "",
     level: "",
-    category: "",
   });
 
   // Debounce search to reduce API calls while user types (500ms threshold)
   const debouncedSearch = useDebounce(filters.search, 500);
 
-  // Separate debounced search from immediate filters: search debounced, level/category applied instantly
+  // Separate debounced search from immediate filters: search debounced, level applied instantly
   const apiFilters = useMemo(
     () => ({
       search: debouncedSearch,
       level: filters.level,
-      category: filters.category,
     }),
-    [debouncedSearch, filters.level, filters.category]
+    [debouncedSearch, filters.level]
   );
 
   const { data, isLoading } = useCourses(apiFilters);

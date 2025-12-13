@@ -13,7 +13,6 @@ import {
 type Filters = {
   search: string;
   level: string;
-  category: string;
 };
 
 type Props = {
@@ -41,17 +40,6 @@ export function CourseFilters({ filters, onChange }: Props) {
           memoizedOnChange((previous) => ({
             ...previous,
             search: event.target.value,
-          }))
-        }
-      />
-      <Input
-        placeholder="Category"
-        className="w-full sm:w-36"
-        value={filters.category}
-        onChange={(event) =>
-          memoizedOnChange((previous) => ({
-            ...previous,
-            category: event.target.value,
           }))
         }
       />

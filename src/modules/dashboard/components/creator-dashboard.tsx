@@ -16,7 +16,7 @@ export function CreatorDashboard() {
   const [showForm, setShowForm] = useState(false);
 
   const { data: courseData, isLoading: loadingCourses } = useCourses(
-    { search: "", level: "", category: "" },
+    { search: "", level: "" },
     { enabled: true }
   );
 
