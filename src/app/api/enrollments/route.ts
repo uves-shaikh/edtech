@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { authenticate, ensureRole } from "@/lib/auth-guard";
@@ -19,13 +20,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const courseId = searchParams.get("courseId");
 
-    const where: { userId: string; courseId?: string } = {
+    const where: Prisma.EnrollmentWhereInput = {
       userId: auth.user.id,
+      ...(courseId && { courseId }),
     };
-
-    if (courseId) {
-      where.courseId = courseId;
-    }
 
     const enrollments = await prisma.enrollment.findMany({
       where,
@@ -80,7 +78,7 @@ export async function GET(request: NextRequest) {
     console.error("Enrollments fetch error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -96,47 +94,53 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { courseId } = enrollmentSchema.parse(body);
 
-    // Check if course exists and is published
+    // Validate course exists and is published before allowing enrollment
+    const courseWhere: Prisma.CourseWhereUniqueInput = { id: courseId };
     const course = await prisma.course.findUnique({
-      where: { id: courseId },
+      where: courseWhere,
     });
 
     if (!course) {
-      return NextResponse.json(
-        { error: "Course not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
     if (!course.isPublished) {
       return NextResponse.json(
         { error: "Course is not available for enrollment" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    // Check if already enrolled
-    const existing = await prisma.enrollment.findUnique({
-      where: {
-        userId_courseId: {
-          userId: auth.user.id,
-          courseId,
-        },
+    // Prevent duplicate enrollments using composite unique constraint
+    const enrollmentWhere: Prisma.EnrollmentWhereUniqueInput = {
+      userId_courseId: {
+        userId: auth.user.id,
+        courseId,
       },
+    };
+
+    const existing = await prisma.enrollment.findUnique({
+      where: enrollmentWhere,
     });
 
     if (existing) {
       return NextResponse.json(
         { error: "Already enrolled in this course" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    const enrollment = await prisma.enrollment.create({
-      data: {
-        userId: auth.user.id,
-        courseId,
+    const enrollmentData: Prisma.EnrollmentCreateInput = {
+      user: {
+        connect: { id: auth.user.id },
       },
+      course: {
+        connect: { id: courseId },
+      },
+    };
+
+    const enrollment = await prisma.enrollment.create({
+      data: enrollmentData,
       include: {
         course: {
           include: {
@@ -184,21 +188,20 @@ export async function POST(request: NextRequest) {
           },
         },
       },
-      { status: 201 },
+      { status: 201 }
     );
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: error.issues[0]?.message || "Validation error" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     console.error("Enrollment error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
-

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 
 import { authenticate, ensureRole } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
@@ -16,13 +17,15 @@ export async function DELETE(
   try {
     const { courseId } = await params;
 
-    const enrollment = await prisma.enrollment.findUnique({
-      where: {
-        userId_courseId: {
-          userId: auth.user.id,
-          courseId,
-        },
+    const enrollmentWhere: Prisma.EnrollmentWhereUniqueInput = {
+      userId_courseId: {
+        userId: auth.user.id,
+        courseId,
       },
+    };
+
+    const enrollment = await prisma.enrollment.findUnique({
+      where: enrollmentWhere,
     });
 
     if (!enrollment) {
@@ -33,12 +36,7 @@ export async function DELETE(
     }
 
     await prisma.enrollment.delete({
-      where: {
-        userId_courseId: {
-          userId: auth.user.id,
-          courseId,
-        },
-      },
+      where: enrollmentWhere,
     });
 
     return NextResponse.json({ success: true });

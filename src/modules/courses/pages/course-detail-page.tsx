@@ -38,7 +38,6 @@ type CourseDetailPageProps = {
 
 export function CourseDetailPage({ params }: CourseDetailPageProps) {
   const { id } = use(params);
-  console.log("id", id);
   const { data: authData } = useCurrentUser();
   const enrollCourse = useEnrollCourse();
   const unenrollCourse = useUnenrollCourse();

@@ -72,7 +72,8 @@ export function AuthCard({ variant, onSubmit, loading }: AuthCardProps) {
 
   async function handleSubmit(values: SignupPayload | SigninPayload) {
     try {
-      // @ts-expect-error - narrowed by variant
+      // TypeScript can't infer that variant narrows the payload type, but runtime guarantees match
+      // @ts-expect-error - variant prop ensures correct payload type at runtime
       await onSubmit(values);
     } catch (error) {
       if (error instanceof Error) {

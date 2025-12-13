@@ -23,7 +23,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Key to track if user might be logged in (to avoid unnecessary API calls)
+// localStorage flag to optimize auth checks: skip API call if user never logged in this session
 const AUTH_FLAG_KEY = "auth_attempted";
 
 function hasAuthFlag(): boolean {
@@ -46,7 +46,7 @@ async function fetchCurrentUser(): Promise<UserResponse> {
   });
 
   if (!response.ok) {
-    // If 401, user is not logged in - clear the flag
+    // 401 indicates unauthenticated state: clear localStorage flag to prevent future unnecessary calls
     if (response.status === 401) {
       setAuthFlag(false);
       const body = await response.json().catch(() => ({}));
@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<Error | null>(null);
 
   const fetchUser = async () => {
-    // Only make API call if user might be logged in
+    // Performance optimization: skip API call if localStorage indicates no previous auth attempt
     if (!hasAuthFlag()) {
       setIsLoading(false);
       setUserState(null);
@@ -92,10 +92,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setError(null);
       const data = await fetchCurrentUser();
       setUserState(data.user);
-      // Keep the flag since user is authenticated
+      // Persist auth flag to optimize subsequent page loads
       setAuthFlag(true);
     } catch (err) {
-      // If error is "Not authenticated", it's not really an error - user is just logged out
+      // Distinguish between "not logged in" (expected state) vs actual errors (network, server issues)
       const errorMessage = err instanceof Error ? err.message : "Unknown error";
       if (errorMessage === "Not authenticated") {
         setIsError(false);
@@ -120,7 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserState(newUser);
     setIsError(false);
     setError(null);
-    // Update auth flag based on user state
+    // Sync localStorage flag with current auth state for optimization
     if (newUser) {
       setAuthFlag(true);
     } else {

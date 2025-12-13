@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { authenticate, ensureRole } from "@/lib/auth-guard";
@@ -15,9 +16,11 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get("userId");
 
     if (userId) {
-      // Get creator by userId
+      // Query parameter provided: fetch specific creator profile by user ID
+      const creatorWhere: Prisma.CreatorWhereUniqueInput = { userId };
+
       const creator = await prisma.creator.findUnique({
-        where: { userId },
+        where: creatorWhere,
         include: {
           user: {
             select: {
@@ -43,7 +46,7 @@ export async function GET(request: NextRequest) {
       if (!creator) {
         return NextResponse.json(
           { error: "Creator not found" },
-          { status: 404 },
+          { status: 404 }
         );
       }
 
@@ -73,21 +76,23 @@ export async function GET(request: NextRequest) {
     }
 
     // List all creators (public)
-    const creators = await prisma.creator.findMany({
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        _count: {
-          select: {
-            courses: true,
-          },
+    const creatorsInclude: Prisma.CreatorInclude = {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
         },
       },
+      _count: {
+        select: {
+          courses: true,
+        },
+      },
+    };
+
+    const creators = await prisma.creator.findMany({
+      include: creatorsInclude,
       orderBy: { createdAt: "desc" },
     });
 
@@ -105,7 +110,7 @@ export async function GET(request: NextRequest) {
     console.error("Creators fetch error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -121,41 +126,57 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const payload = creatorUpdateSchema.parse(body);
 
+    const creatorWhere: Prisma.CreatorWhereUniqueInput = {
+      userId: auth.user.id,
+    };
+
     let creator = await prisma.creator.findUnique({
-      where: { userId: auth.user.id },
+      where: creatorWhere,
     });
 
     if (!creator) {
       // Create creator profile if it doesn't exist
-      creator = await prisma.creator.create({
-        data: {
-          userId: auth.user.id,
-          bio: payload.bio,
-          expertise: payload.expertise,
+      const creatorData: Prisma.CreatorCreateInput = {
+        user: {
+          connect: { id: auth.user.id },
         },
+        bio: payload.bio,
+        expertise: payload.expertise,
+      };
+
+      creator = await prisma.creator.create({
+        data: creatorData,
       });
     } else {
-      // Update existing creator
+      // Upsert pattern: update bio/expertise fields for existing creator profile
+      const updateData: Prisma.CreatorUpdateInput = {
+        bio: payload.bio,
+        expertise: payload.expertise,
+      };
+
       creator = await prisma.creator.update({
-        where: { userId: auth.user.id },
-        data: {
-          bio: payload.bio,
-          expertise: payload.expertise,
-        },
+        where: creatorWhere,
+        data: updateData,
       });
     }
 
-    const creatorWithUser = await prisma.creator.findUnique({
-      where: { id: creator.id },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
+    const creatorWithUserInclude: Prisma.CreatorInclude = {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
         },
       },
+    };
+
+    const creatorWithUserWhere: Prisma.CreatorWhereUniqueInput = {
+      id: creator.id,
+    };
+
+    const creatorWithUser = await prisma.creator.findUnique({
+      where: creatorWithUserWhere,
+      include: creatorWithUserInclude,
     });
 
     return NextResponse.json({
@@ -172,15 +193,14 @@ export async function PUT(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: error.issues[0]?.message || "Validation error" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     console.error("Creator update error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
-

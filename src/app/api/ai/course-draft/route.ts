@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { generateText, type LanguageModelV1 } from "ai";
 import { google } from "@ai-sdk/google";
+import { generateText } from "ai";
+import { NextRequest, NextResponse } from "next/server";
 
 import { authenticate, ensureRole } from "@/lib/auth-guard";
 import {
@@ -35,10 +35,8 @@ export async function POST(request: NextRequest) {
   const { topic, audience, goals, level } = parsed.data;
 
   try {
-    const model = google("gemini-2.5-flash");
-
     const result = await generateText({
-      model: model as unknown as LanguageModelV1,
+      model: google("gemini-2.5-flash"),
       system:
         "You are an instructional designer helping course creators craft concise, outcome-focused course drafts. Respond with valid JSON only, no markdown formatting.",
       prompt: [
@@ -53,7 +51,7 @@ export async function POST(request: NextRequest) {
       temperature: 0.6,
     });
 
-    // Parse JSON from response text
+    // Extract JSON from AI response (may be wrapped in markdown code blocks)
     const jsonMatch = result.text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error("AI response did not contain valid JSON");
@@ -71,7 +69,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("AI course draft error:", error);
 
-    // Provide more specific error messages
+    // Map API errors to user-friendly messages for common failure scenarios
     if (error instanceof Error) {
       if (
         error.message.includes("404") ||

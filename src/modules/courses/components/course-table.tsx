@@ -49,10 +49,10 @@ export function CourseTable({ onSelect }: Props) {
   });
   const [courseToDelete, setCourseToDelete] = useState<string | null>(null);
 
-  // Debounce search input with 500ms delay
+  // Debounce search to reduce API calls while user types (500ms threshold)
   const debouncedSearch = useDebounce(filters.search, 500);
 
-  // Use debounced search for API calls, but keep immediate values for level and category
+  // Separate debounced search from immediate filters: search debounced, level/category applied instantly
   const apiFilters = useMemo(
     () => ({
       search: debouncedSearch,

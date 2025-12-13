@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { authenticate, ensureRole, forbidden } from "@/lib/auth-guard";
@@ -16,32 +17,36 @@ export async function GET(
     const auth = await authenticate(request).catch(() => null);
     const isAuthenticated = auth && !("response" in auth);
 
-    const course = await prisma.course.findUnique({
-      where: { id },
-      include: {
-        creator: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
+    const where: Prisma.CourseWhereUniqueInput = { id };
+
+    const include: Prisma.CourseInclude = {
+      creator: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
             },
           },
         },
-        enrollments:
-          isAuthenticated && auth.user.role === "STUDENT"
-            ? {
-                where: { userId: auth.user.id },
-              }
-            : undefined,
-        _count: {
-          select: {
-            enrollments: true,
-          },
+      },
+      enrollments:
+        isAuthenticated && auth.user.role === "STUDENT"
+          ? {
+              where: { userId: auth.user.id },
+            }
+          : undefined,
+      _count: {
+        select: {
+          enrollments: true,
         },
       },
+    };
+
+    const course = await prisma.course.findUnique({
+      where,
+      include,
     });
 
     if (!course) {
@@ -74,7 +79,7 @@ export async function GET(
               id: course.creator.id,
               bio: course.creator.bio,
               expertise: course.creator.expertise,
-              user: course.creator.user,
+              user: course.creator,
             }
           : null,
         enrollmentCount: course._count.enrollments,
@@ -105,11 +110,14 @@ export async function PUT(
   const guard = ensureRole(auth.user, ["CREATOR", "ADMIN"]);
   if (guard) return guard;
 
+  const courseWhere: Prisma.CourseWhereUniqueInput = { id };
+  const courseInclude: Prisma.CourseInclude = {
+    creator: true,
+  };
+
   const existing = await prisma.course.findUnique({
-    where: { id },
-    include: {
-      creator: true,
-    },
+    where: courseWhere,
+    include: courseInclude,
   });
 
   if (!existing) {
@@ -118,8 +126,11 @@ export async function PUT(
 
   // Check ownership: creator must own the course, or be admin
   if (auth.user.role !== "ADMIN") {
+    const creatorWhere: Prisma.CreatorWhereUniqueInput = {
+      userId: auth.user.id,
+    };
     const creator = await prisma.creator.findUnique({
-      where: { userId: auth.user.id },
+      where: creatorWhere,
     });
     if (!creator || existing.creatorId !== creator.id) {
       return forbidden();
@@ -134,31 +145,35 @@ export async function PUT(
       duration: Number(body.duration),
     });
 
-    const course = await prisma.course.update({
-      where: { id },
-      data: {
-        title: payload.title,
-        description: payload.description,
-        category: payload.category,
-        level: payload.level,
-        price: payload.price,
-        duration: payload.duration,
-        imageUrl: payload.imageUrl,
-        isPublished: payload.isPublished,
-      },
-      include: {
-        creator: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
+    const updateWhere: Prisma.CourseWhereUniqueInput = { id };
+    const updateData: Prisma.CourseUpdateInput = {
+      title: payload.title,
+      description: payload.description,
+      category: payload.category,
+      level: payload.level,
+      price: payload.price,
+      duration: payload.duration,
+      imageUrl: payload.imageUrl,
+      isPublished: payload.isPublished,
+    };
+    const updateInclude: Prisma.CourseInclude = {
+      creator: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
             },
           },
         },
       },
+    };
+
+    const course = await prisma.course.update({
+      where: updateWhere,
+      data: updateData,
+      include: updateInclude,
     });
 
     return NextResponse.json({
@@ -178,7 +193,7 @@ export async function PUT(
           id: course.creator.id,
           bio: course.creator.bio,
           expertise: course.creator.expertise,
-          user: course.creator.user,
+          user: course.creator,
         },
       },
     });
@@ -209,11 +224,14 @@ export async function DELETE(
   const guard = ensureRole(auth.user, ["CREATOR", "ADMIN"]);
   if (guard) return guard;
 
+  const courseWhere: Prisma.CourseWhereUniqueInput = { id };
+  const courseInclude: Prisma.CourseInclude = {
+    creator: true,
+  };
+
   const existing = await prisma.course.findUnique({
-    where: { id },
-    include: {
-      creator: true,
-    },
+    where: courseWhere,
+    include: courseInclude,
   });
 
   if (!existing) {
@@ -222,15 +240,19 @@ export async function DELETE(
 
   // Check ownership: creator must own the course, or be admin
   if (auth.user.role !== "ADMIN") {
+    const creatorWhere: Prisma.CreatorWhereUniqueInput = {
+      userId: auth.user.id,
+    };
     const creator = await prisma.creator.findUnique({
-      where: { userId: auth.user.id },
+      where: creatorWhere,
     });
     if (!creator || existing.creatorId !== creator.id) {
       return forbidden();
     }
   }
 
-  await prisma.course.delete({ where: { id } });
+  const deleteWhere: Prisma.CourseWhereUniqueInput = { id };
+  await prisma.course.delete({ where: deleteWhere });
 
   return NextResponse.json({ success: true });
 }

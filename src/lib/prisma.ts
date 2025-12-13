@@ -1,20 +1,17 @@
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { PrismaClient } = require("@prisma/client");
-
-type PrismaClientInstance = any;
+import { PrismaClient } from "@prisma/client";
 
 declare global {
   // eslint-disable-next-line no-var
-  var prisma: PrismaClientInstance | undefined;
+  var prisma: PrismaClient | undefined;
 }
 
-function createPrismaClient(): PrismaClientInstance {
+function createPrismaClient(): PrismaClient {
   return new PrismaClient({
     log:
       process.env.NODE_ENV === "development"
         ? ["query", "warn", "error"]
         : ["error"],
-  }) as PrismaClientInstance;
+  });
 }
 
 export const prisma = globalThis.prisma ?? createPrismaClient();

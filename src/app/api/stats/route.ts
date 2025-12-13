@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 
 import { authenticate, ensureRole } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
@@ -8,7 +9,17 @@ export async function GET(request: NextRequest) {
     const auth = await authenticate(request);
     const isAuthenticated = !("response" in auth);
 
-    // Public stats (available to all)
+    // Base statistics visible to all users (no authentication required)
+    const publishedCoursesWhere: Prisma.CourseWhereInput = {
+      isPublished: true,
+    };
+    const studentsWhere: Prisma.UserWhereInput = {
+      role: "STUDENT",
+    };
+    const creatorsWhere: Prisma.UserWhereInput = {
+      role: "CREATOR",
+    };
+
     const [
       totalCourses,
       publishedCourses,
@@ -17,9 +28,9 @@ export async function GET(request: NextRequest) {
       totalEnrollments,
     ] = await Promise.all([
       prisma.course.count(),
-      prisma.course.count({ where: { isPublished: true } }),
-      prisma.user.count({ where: { role: "STUDENT" } }),
-      prisma.user.count({ where: { role: "CREATOR" } }),
+      prisma.course.count({ where: publishedCoursesWhere }),
+      prisma.user.count({ where: studentsWhere }),
+      prisma.user.count({ where: creatorsWhere }),
       prisma.enrollment.count(),
     ]);
 
@@ -33,26 +44,39 @@ export async function GET(request: NextRequest) {
         publishedCourses > 0 ? totalEnrollments / publishedCourses : 0,
     };
 
-    // Add role-specific stats if authenticated
+    // Extend response with role-based statistics based on user permissions
     if (isAuthenticated) {
       if (auth.user.role === "CREATOR") {
+        const creatorWhere: Prisma.CreatorWhereUniqueInput = {
+          userId: auth.user.id,
+        };
+
         const creator = await prisma.creator.findUnique({
-          where: { userId: auth.user.id },
+          where: creatorWhere,
         });
 
         if (creator) {
+          const creatorCoursesWhere: Prisma.CourseWhereInput = {
+            creatorId: creator.id,
+          };
+          const creatorPublishedCoursesWhere: Prisma.CourseWhereInput = {
+            creatorId: creator.id,
+            isPublished: true,
+          };
+          const creatorEnrollmentsWhere: Prisma.EnrollmentWhereInput = {
+            course: {
+              creatorId: creator.id,
+            },
+          };
+
           const creatorCourses = await prisma.course.count({
-            where: { creatorId: creator.id },
+            where: creatorCoursesWhere,
           });
           const creatorPublishedCourses = await prisma.course.count({
-            where: { creatorId: creator.id, isPublished: true },
+            where: creatorPublishedCoursesWhere,
           });
           const creatorEnrollments = await prisma.enrollment.count({
-            where: {
-              course: {
-                creatorId: creator.id,
-              },
-            },
+            where: creatorEnrollmentsWhere,
           });
 
           return NextResponse.json({
@@ -65,8 +89,12 @@ export async function GET(request: NextRequest) {
           });
         }
       } else if (auth.user.role === "STUDENT") {
+        const studentEnrollmentsWhere: Prisma.EnrollmentWhereInput = {
+          userId: auth.user.id,
+        };
+
         const studentEnrollments = await prisma.enrollment.count({
-          where: { userId: auth.user.id },
+          where: studentEnrollmentsWhere,
         });
 
         return NextResponse.json({
@@ -76,17 +104,21 @@ export async function GET(request: NextRequest) {
           },
         });
       } else if (auth.user.role === "ADMIN") {
-        // Admin gets all stats
+        // Admin access: include aggregated analytics (category/level breakdowns)
+        const groupByWhere: Prisma.CourseWhereInput = {
+          isPublished: true,
+        };
+
         const coursesByCategory = await prisma.course.groupBy({
           by: ["category"],
           _count: true,
-          where: { isPublished: true },
+          where: groupByWhere,
         });
 
         const coursesByLevel = await prisma.course.groupBy({
           by: ["level"],
           _count: true,
-          where: { isPublished: true },
+          where: groupByWhere,
         });
 
         return NextResponse.json({
@@ -110,8 +142,7 @@ export async function GET(request: NextRequest) {
     console.error("Stats fetch error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
-

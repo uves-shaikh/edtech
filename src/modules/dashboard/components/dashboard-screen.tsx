@@ -55,16 +55,17 @@ export function DashboardScreen() {
     );
   }
 
-  // Route to appropriate dashboard based on role
+  // Role-based routing: students see enrollment-focused dashboard
   if (authData.user.role === "STUDENT") {
     return <StudentDashboard />;
   }
 
+  // Creators and admins share the same course management interface
   if (authData.user.role === "CREATOR" || authData.user.role === "ADMIN") {
     return <CreatorDashboard />;
   }
 
-  // Fallback for unknown roles
+  // Edge case: handle unexpected role values from database
   return (
     <Card>
       <CardHeader>

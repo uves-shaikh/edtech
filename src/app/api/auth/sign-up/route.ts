@@ -1,8 +1,9 @@
+import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { setAuthCookie, generateToken } from "@/lib/auth";
+import { generateToken, setAuthCookie } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { signupSchema } from "@/modules/auth/schemas/auth";
 
@@ -11,8 +12,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = signupSchema.parse(body);
 
+    const where: Prisma.UserWhereUniqueInput = {
+      email: validatedData.email,
+    };
+
     const existingUser = await prisma.user.findUnique({
-      where: { email: validatedData.email },
+      where,
     });
 
     if (existingUser) {
@@ -25,20 +30,26 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(validatedData.password, 10);
     const userRole = validatedData.role || "STUDENT";
 
+    const userData: Prisma.UserCreateInput = {
+      email: validatedData.email,
+      password: hashedPassword,
+      name: validatedData.name,
+      role: userRole,
+    };
+
     const user = await prisma.user.create({
-      data: {
-        email: validatedData.email,
-        password: hashedPassword,
-        name: validatedData.name,
-        role: userRole,
-      },
+      data: userData,
     });
 
     if (user.role === "CREATOR") {
-      await prisma.creator.create({
-        data: {
-          userId: user.id,
+      const creatorData: Prisma.CreatorCreateInput = {
+        user: {
+          connect: { id: user.id },
         },
+      };
+
+      await prisma.creator.create({
+        data: creatorData,
       });
     }
 

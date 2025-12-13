@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { setAuthCookie, generateToken } from "@/lib/auth";
@@ -11,8 +12,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = signinSchema.parse(body);
 
+    const where: Prisma.UserWhereUniqueInput = {
+      email: validatedData.email,
+    };
+
     const user = await prisma.user.findUnique({
-      where: { email: validatedData.email },
+      where,
     });
 
     if (!user) {

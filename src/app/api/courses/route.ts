@@ -1,31 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { authenticate, ensureRole } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { courseSchema } from "@/modules/courses/schemas/course";
-
-type CourseWithRelations = {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  level: string;
-  price: number;
-  duration: number;
-  imageUrl: string | null;
-  isPublished: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  creator: {
-    id: string;
-    bio: string | null;
-    expertise: string | null;
-    user: { id: string; name: string; email: string };
-  } | null;
-  enrollments?: { userId: string }[];
-  _count: { enrollments: number };
-};
 
 const querySchema = z.object({
   search: z.string().optional(),
@@ -55,7 +34,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { search, category, level, isPublished, creatorId } = parsed.data;
-    const where: Record<string, unknown> = {};
+    const where: Prisma.CourseWhereInput = {};
 
     if (search) {
       where.OR = [
@@ -68,7 +47,7 @@ export async function GET(request: NextRequest) {
     if (category) where.category = category;
     if (level) where.level = level;
 
-    // Handle isPublished filter
+    // Convert string query param to boolean for isPublished filter
     if (isPublished !== undefined) {
       where.isPublished = isPublished === "true";
     }
@@ -80,8 +59,12 @@ export async function GET(request: NextRequest) {
         where.isPublished = true;
       } else if (auth.user.role === "CREATOR") {
         // Creators see their own courses
+        const creatorWhere: Prisma.CreatorWhereUniqueInput = {
+          userId: auth.user.id,
+        };
+
         const creator = await prisma.creator.findUnique({
-          where: { userId: auth.user.id },
+          where: creatorWhere,
         });
         if (creator) {
           where.creatorId = creator.id;
@@ -99,34 +82,36 @@ export async function GET(request: NextRequest) {
       where.creatorId = creatorId;
     }
 
-    const courses = (await prisma.course.findMany({
-      where,
-      include: {
-        creator: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
+    const include: Prisma.CourseInclude = {
+      creator: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
             },
           },
         },
-        enrollments:
-          isAuthenticated && auth.user.role === "STUDENT"
-            ? {
-                where: { userId: auth.user.id },
-              }
-            : undefined,
-        _count: {
-          select: {
-            enrollments: true,
-          },
+      },
+      enrollments:
+        isAuthenticated && auth.user.role === "STUDENT"
+          ? {
+              where: { userId: auth.user.id },
+            }
+          : undefined,
+      _count: {
+        select: {
+          enrollments: true,
         },
       },
+    };
+
+    const courses = await prisma.course.findMany({
+      where,
+      include,
       orderBy: { createdAt: "desc" },
-    })) as CourseWithRelations[];
+    });
 
     return NextResponse.json({
       data: courses.map((course) => ({
@@ -146,7 +131,7 @@ export async function GET(request: NextRequest) {
               id: course.creator.id,
               bio: course.creator.bio,
               expertise: course.creator.expertise,
-              user: course.creator.user,
+              user: course.creator,
             }
           : null,
         enrollmentCount: course._count.enrollments,
@@ -182,44 +167,58 @@ export async function POST(request: NextRequest) {
     });
 
     // Ensure creator profile exists
+    const creatorWhere: Prisma.CreatorWhereUniqueInput = {
+      userId: auth.user.id,
+    };
+
     let creator = await prisma.creator.findUnique({
-      where: { userId: auth.user.id },
+      where: creatorWhere,
     });
 
     if (!creator) {
       // Create creator profile if it doesn't exist
-      creator = await prisma.creator.create({
-        data: {
-          userId: auth.user.id,
+      const creatorData: Prisma.CreatorCreateInput = {
+        user: {
+          connect: { id: auth.user.id },
         },
+      };
+
+      creator = await prisma.creator.create({
+        data: creatorData,
       });
     }
 
-    const course = await prisma.course.create({
-      data: {
-        title: payload.title,
-        description: payload.description,
-        category: payload.category,
-        level: payload.level,
-        price: payload.price,
-        duration: payload.duration,
-        imageUrl: payload.imageUrl,
-        isPublished: payload.isPublished,
-        creatorId: creator.id,
+    const courseData: Prisma.CourseCreateInput = {
+      title: payload.title,
+      description: payload.description,
+      category: payload.category,
+      level: payload.level,
+      price: payload.price,
+      duration: payload.duration,
+      imageUrl: payload.imageUrl,
+      isPublished: payload.isPublished,
+      creator: {
+        connect: { id: creator.id },
       },
-      include: {
-        creator: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
+    };
+
+    const courseInclude: Prisma.CourseInclude = {
+      creator: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
             },
           },
         },
       },
+    };
+
+    const course = await prisma.course.create({
+      data: courseData,
+      include: courseInclude,
     });
 
     return NextResponse.json(
@@ -240,7 +239,7 @@ export async function POST(request: NextRequest) {
             id: course.creator.id,
             bio: course.creator.bio,
             expertise: course.creator.expertise,
-            user: course.creator.user,
+            user: course.creator,
           },
         },
       },

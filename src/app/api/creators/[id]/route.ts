@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
 
+    const creatorWhere: Prisma.CreatorWhereUniqueInput = { id };
+
     const creator = await prisma.creator.findUnique({
-      where: { id },
+      where: creatorWhere,
       include: {
         user: {
           select: {
@@ -34,10 +37,7 @@ export async function GET(
     });
 
     if (!creator) {
-      return NextResponse.json(
-        { error: "Creator not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Creator not found" }, { status: 404 });
     }
 
     return NextResponse.json({
@@ -67,8 +67,7 @@ export async function GET(
     console.error("Creator fetch error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
-

@@ -52,7 +52,7 @@ export function CourseForm({
   defaultValues,
   onCompleted,
 }: Props) {
-  // Convert Course to CourseInput format if needed
+  // Normalize Course type to CourseInput schema for form initialization
   const formDefaults = useMemo<Partial<CourseInput> | undefined>(() => {
     if (!defaultValues) return undefined;
     return {
@@ -88,7 +88,7 @@ export function CourseForm({
 
       if (mode === "create") {
         await createCourse.mutateAsync(payload);
-        // Reset to empty form for new course creation
+        // Clear form after successful creation to allow rapid course entry
         typedForm.reset({
           title: "",
           description: "",
@@ -101,7 +101,7 @@ export function CourseForm({
         });
       } else if (courseId) {
         await updateCourse.mutateAsync(payload);
-        // Reset to formDefaults for edit mode
+        // Restore form to current server state after successful update
         if (formDefaults) {
           typedForm.reset(formDefaults);
         }
@@ -109,8 +109,8 @@ export function CourseForm({
 
       onCompleted?.();
     } catch (error) {
-      // Error is already handled by mutation's onError callback
-      // Don't reset form or call onCompleted on error
+      // Mutation's onError callback handles user feedback via toast
+      // Preserve form state on error so user can correct and retry
     }
   }
 
