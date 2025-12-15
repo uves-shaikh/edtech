@@ -1,126 +1,171 @@
 # EdTech Platform
 
-Full-stack Next.js 16 workspace for managing courses with role-based access, Prisma/PostgreSQL, and AI-assisted summaries.
+This is a full‑stack EdTech platform built with Next.js 16.  
+It lets students browse and enroll in courses, and lets creators manage their own course catalog with proper role‑based access and clean UI.
 
-## Features
+The goal of this project is to show how I structure a modern Next.js app with real authentication, Prisma/PostgreSQL, dashboards, and a small AI feature.
 
-- JWT auth with Student, Creator, and Admin roles; HTTP-only cookie storage.
-- Course catalog with filters, detail pages, and role-aware visibility (published-only for public/students; creators see their own drafts).
-- Creator workspace: create/update/delete courses, publish toggle, pricing/duration fields, and enrollment counts.
-- Student experience: enroll/unenroll, enrollment list, and course progress entry points.
-- AI assist: Gemini-powered course summary endpoint (`POST /api/ai/summary`) for landing copy.
-- Dashboards: creator metrics (total/published courses, avg price, enrollments) and student enrollment view.
-- API-first: all CRUD flows exposed through typed Next.js App Router handlers.
-- UI stack: React 19, TanStack Query, shadcn/ui + Tailwind, theming via `next-themes`, toast via `sonner`.
+---
 
-## Architecture
+## What you can do in the app
 
-- **App Router** in `src/app` with colocated API routes under `/api`.
-- **Database** via Prisma/PostgreSQL: `User`, `Creator`, `Course`, `Enrollment` models with role enum and ownership checks.
-- **Auth** utilities in `src/lib/auth.ts` and guards in `src/lib/auth-guard.ts`; cookies set on sign-in/up, cleared on sign-out.
-- **State/data**: TanStack Query hooks in `src/modules/**/hooks`, Zod validation in `schemas/`, UI components in `components/ui`.
-- **CORS middleware**: `src/proxy.ts` allows configured origins for API routes.
-- **Providers**: `src/components/providers/app-providers.tsx` wires QueryClient, theming, and toasts.
+- **Public / student side**
 
-## Key Routes & UI
+  - Browse all **published** courses with filters and a course detail page.
+  - Sign up, sign in, and sign out with JWT auth stored in an HTTP‑only cookie.
+  - Enroll in a course, see your enrollments, and manage them from a student dashboard.
 
-- Pages: `/` (marketing), `/courses`, `/courses/[id]`, `/creators/[id]`, `/sign-in`, `/sign-up`.
-- Creator tooling: course form/table components under `src/modules/courses/components`, dashboard cards in `src/modules/dashboard`.
-- Student enrollment list in `StudentDashboard` (`src/modules/dashboard/components/student-dashboard.tsx`).
+- **Creator side**
 
-## API Surface (App Router)
+  - Turn a user into a **Creator** with a linked profile.
+  - Create, update, delete, and publish/unpublish courses.
+  - Set price, duration, difficulty, and description.
+  - See simple creator stats: how many courses you own, how many are published, and basic enrollment counts.
 
-- Auth: `POST /api/auth/sign-up`, `POST /api/auth/sign-in`, `POST /api/auth/sign-out`, `GET /api/auth/me`.
-- Courses: `GET/POST /api/courses`, `GET/PUT/DELETE /api/courses/:id`.
-- Enrollments: `GET /api/enrollments`, `POST /api/enrollments`, `DELETE /api/enrollments/:courseId`.
-- Creators: `GET/PUT /api/creators` (self), `GET /api/creators/:id`.
-- Stats: `GET /api/stats` (role-aware aggregates).
-- AI: `POST /api/ai/summary` (Gemini 1.5 Flash).
+- **AI helper**
+  - Small AI endpoint that generates marketing copy / summary for a course description using Google Gemini.
 
-## Prerequisites
+---
 
-- Node.js 20+
-- PostgreSQL instance
-- Package manager: npm/pnpm/yarn (examples use npm)
-- (Optional) Google Generative AI key for summaries
+## Tech stack and main concepts
 
-## Quick Start (Local)
+- **Framework**: Next.js 16 App Router (`src/app`)
+- **Language**: TypeScript (strict)
+- **Database**: PostgreSQL with Prisma ORM (`prisma/schema.prisma`, `prisma/migrations/`)
+- **Auth**: Custom JWT auth stored in an `auth_token` HTTP‑only cookie
+- **State & data fetching**: TanStack Query hooks under `src/modules/**/hooks`
+- **UI**: shadcn/ui components + Tailwind CSS, theming via `next-themes`, toasts via `sonner`
+- **Validation**: `zod` + `react-hook-form` for all forms
+- **AI**: Google Generative AI (Gemini 1.5) for the course summary endpoint
 
-1. Install dependencies
+I tried to keep everything modular: each feature lives under `src/modules/<feature>` with its own components, hooks, pages, and schemas.
+
+---
+
+## Project structure (high level)
+
+- `src/app`
+
+  - **Pages**: `/`, `/dashboard`, `/courses`, `/courses/[id]`, `/creators/[id]`, `/sign-in`, `/sign-up`
+  - **API routes** under `/api`:
+    - `auth`: `sign-up`, `sign-in`, `sign-out`, `me`
+    - `courses`: list, create, update, delete, get by id
+    - `enrollments`: list, create, delete by `courseId`
+    - `creators`: get/update current creator, get creator by id
+    - `stats`: role‑aware aggregates for dashboards
+    - `ai/course-draft`: AI summary generation for course descriptions
+
+- `src/modules`
+
+  - `auth`: auth card, sign in / sign up pages, schemas, and `use-auth` hook.
+  - `courses`: course form, course table, filters, AI assistant, `use-courses` and AI hooks, Zod schemas.
+  - `creators`: creator profile page and `use-creators` hook.
+  - `dashboard`: dashboard screen, creator and student dashboards, small stats cards.
+  - `enrollments`: `use-enrollments` hook and related UI.
+
+- `src/components`
+
+  - `navbar`, `footer`, and app‑level providers.
+  - `components/ui`: shadcn‑style primitives (`button`, `input`, `card`, `table`, `skeleton`, `dialog`, etc.).
+
+- `src/lib`
+
+  - `auth.ts`: sign/verify JWT, cookie helpers, user extraction.
+  - `auth-guard.ts`: role checks and helper functions to protect API routes.
+  - `prisma.ts`: Prisma client setup.
+  - `utils.ts`: small shared helpers.
+
+- `prisma`
+  - `schema.prisma`: defines `User`, `Creator`, `Course`, `Enrollment` and role enums.
+  - `migrations/`: SQL migrations.
+  - `seed.ts`: seeds some users, creators, courses, and enrollments for demo/testing.
+
+---
+
+## Auth and roles (how it actually works)
+
+- On **sign‑up / sign‑in**, the server creates a JWT and stores it in an `auth_token` HTTP‑only cookie.
+- API routes use helpers from `src/lib/auth.ts` and `src/lib/auth-guard.ts` to:
+  - Read and verify the token.
+  - Load the user and role from the database.
+  - Enforce access rules (for example: only creators can manage their own courses).
+- Students can only access **published** courses; creators can manage their own courses, and admins have elevated access.
+- Errors are returned as structured JSON with clear HTTP status codes (401/403 helpers in the guard).
+
+---
+
+## AI course summary endpoint
+
+- Endpoint: `POST /api/ai/course-draft`
+- Body: `{ "description": "long course description text..." }`
+- Uses the `GOOGLE_GENERATIVE_AI_API_KEY` to call Gemini and returns a short, marketing‑style summary.
+- This is wired into the course form UI as a helper to quickly draft course copy.
+
+---
+
+## Running the project locally
+
+### 1. Prerequisites
+
+- Node.js **20+**
+- PostgreSQL database
+- Package manager: npm / pnpm / yarn (examples use npm)
+- (Optional) Google Generative AI API key for the AI endpoint
+
+### 2. Install dependencies
 
 ```bash
 npm install
 ```
 
-2. Configure environment
+### 3. Configure environment
+
+Create `.env.local` and set:
 
 ```bash
-cp .env.example .env.local  # create if missing
+DATABASE_URL=postgresql://user:pass@localhost:5432/edtech
+JWT_SECRET=superlongrandomstring
+GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_api_key_here   # optional, only for AI endpoint
+ALLOWED_ORIGINS=http://localhost:3000                   # optional, for CORS
 ```
 
-Fill the variables from the table below. 3) Database setup
+### 4. Database setup
 
 ```bash
 npx prisma migrate dev
 npx prisma db seed
 ```
 
-4. Run the app
+### 5. Run the app
 
 ```bash
 npm run dev
 # open http://localhost:3000
 ```
 
-5. Lint
+### 6. Useful scripts
 
-```bash
-npm run lint
-```
+- `npm run lint` – run ESLint on the project
+- `npm run build` – production build
+- `npm run start` – run the built app
 
-6. Production build
+---
 
-```bash
-npm run build
-npm run start
-```
+## Notes on quality, UI and patterns
 
-## Environment Variables
+- Uses **React 19**, functional components, and hooks only.
+- UI built with shadcn + Tailwind, shared primitives under `src/components/ui`.
+- Data fetching goes through **TanStack Query** hooks to keep components simple and cache‑friendly.
+- Forms use `react-hook-form` + `zod` schemas kept next to each feature.
+- Loading states, empty states, and error handling are implemented with skeletons, toasts, and clear messages.
 
-| Name                           | Required | Description                           | Example                                        |
-| ------------------------------ | -------- | ------------------------------------- | ---------------------------------------------- |
-| `DATABASE_URL`                 | Yes      | Postgres connection string            | `postgresql://user:pass@localhost:5432/edtech` |
-| `JWT_SECRET`                   | Yes      | Secret for signing auth cookies       | `superlongrandomstring`                        |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | Optional | Enables `/api/ai/summary`             | `AIza...`                                      |
-| `ALLOWED_ORIGINS`              | Optional | Comma list for CORS in `src/proxy.ts` | `http://localhost:3000`                        |
+---
 
-## Data & Seeding
+## Connect with me
 
-- Schema defined in `prisma/schema.prisma` with migrations under `prisma/migrations/`.
-- `npx prisma db seed` populates sample users, creators, courses, and enrollments for UI demos.
-- Seeded passwords are placeholders; create real accounts via the sign-up flow for authentication.
+If you want to talk about this project or my work in general, you can reach me here:
 
-## Notes on Auth & Roles
+- **GitHub**: `https://github.com/uves-shaikh`
+- **LinkedIn**: `https://www.linkedin.com/in/uves-shaikh`
 
-- Tokens are stored in the `auth_token` HTTP-only cookie.
-- Role enforcement lives in `src/lib/auth-guard.ts` and is applied across course/enrollment/creator routes.
-- Students can only see published courses; creators see their own; admins bypass ownership checks.
-
-## Monitoring & Errors
-
-- API handlers return structured JSON errors; 401/403 helpers in `auth-guard`.
-- Prisma client logs queries in development; errors only in production (`src/lib/prisma.ts`).
-
-## AI Summary Endpoint
-
-- `POST /api/ai/summary` with body `{ "description": "text..." }`.
-- Requires `GOOGLE_GENERATIVE_AI_API_KEY`; responds with a concise bullet summary for marketing copy.
-
-## CORS
-
-- `src/proxy.ts` sets CORS headers for `/api/*`; configure `ALLOWED_ORIGINS` for non-same-origin clients.
-
-## Suggested Next Steps
-
-- Add an explicit `/dashboard` route that renders `DashboardScreen`.
-- Wire CI for lint/build checks and add tests for auth flows and course ownership rules.
+Feel free to open an issue, suggest improvements, or just say hi.
